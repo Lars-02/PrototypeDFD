@@ -1,17 +1,10 @@
-import * as GStorage from "@google-cloud/storage";
 import * as vision from "@google-cloud/vision";
 import * as fs from "fs";
 import * as Multer from "multer";
 import * as path from "path";
 import * as express from "express";
-import {format} from "util";
-import {resolve} from "dns/promises";
 
 const app = express();
-// Instantiate a storage client
-const storage = new GStorage.Storage({
-    projectId: 'prototype-dfdesign', keyFilename: 'key.json'
-});
 
 let client;
 
@@ -26,9 +19,6 @@ const multer = Multer({
         fileSize: 5 * 1024 * 1024, // no larger than 5mb, you can change as needed.
     },
 });
-
-// A bucket is a container for objects (files).
-const bucket = storage.bucket('dfd-file-detection');
 
 app.use('/', express.static(path.resolve('../app/dist')))
 
@@ -54,87 +44,57 @@ app.post('/analyse', multer.single('file'), async function (req, res) {
     });
 
     if (req.file.originalname.endsWith('.pdf')) {
-        await analysePdf(req, res)
-    } else if (req.file.originalname.endsWith('.jpg')) {
-        await analyseImage(req, res)
+        await analyse(req.file.originalname)
     } else {
-        return res.status(503)
+        return res.status(503).send()
     }
 
-    return res.status(200)
+    clearTmp()
+    console.log('Cleared tmp/')
+    return res.status(200).send()
 });
 
-async function analyseImage(req, res) {
-    // Get result
-    const result = await client.textDetection("tmp/" + req.file.originalname).catch(err => {
-        console.error("READ: " + err)
-        clearTmp()
-    });
+async function analyse(filename) {
 
-    // Print result
-    const labels = result[0].textAnnotations;
-    console.log('Labels:');
-    labels.forEach(label => console.log(label));
-}
-
-async function analysePdf(req, res) {
-    // Create a new blob in the bucket and upload the file data.
-    const blob = bucket.file('vision/analyse/' + req.file.originalname);
-
-    await new Promise((resolve) => {
-        const blobStream = blob.createWriteStream();
-
-        blobStream.on('error', err => {
-            console.log(err);
-            resolve(false);
-        });
-
-        blobStream.on('finish', async () => {
-            resolve(true);
-        });
-
-        blobStream.end(req.file.buffer);
-    })
-
-    clearTmp()
-
-    // Bucket where the file resides
-    const bucketName = 'dfd-file-detection';
-    // Path to PDF file within bucket
-    const fileName = 'vision/analyse/' + req.file.originalname
-    // The folder to store the results
-    const outputPrefix = 'vision/result'
-
-    const gcsSourceUri = `gs://${bucketName}/${fileName}`;
-    const gcsDestinationUri = `gs://${bucketName}/${outputPrefix}/`;
-
-    const inputConfig = {
-        // Supported mime_types are: 'application/pdf' and 'image/tiff'
-        mimeType: 'application/pdf',
-        gcsSource: {
-            uri: gcsSourceUri,
-        },
-    };
-    const outputConfig = {
-        gcsDestination: {
-            uri: gcsDestinationUri,
-        },
-    };
-    const features = [{type: 'DOCUMENT_TEXT_DETECTION'}];
-    const request = {
-        requests: [
-            {
-                inputConfig: inputConfig,
-                features: features,
-                outputConfig: outputConfig,
+    // Make the synchronous batch request.
+    const [result] = await client.batchAnnotateFiles({
+        requests: [{
+            inputConfig: {
+                mimeType: 'application/pdf',
+                content: await fs.promises.readFile("tmp/" + filename),
             },
-        ],
-    };
+            features: [{type: 'DOCUMENT_TEXT_DETECTION'}],
+        }],
+    });
+    console.log('File analysed')
 
-    const [operation] = await client.asyncBatchAnnotateFiles(request);
-    const [filesResponse] = await operation.promise();
-    const destinationUri = filesResponse.responses[0].outputConfig.gcsDestination.uri;
-    console.log('Json saved to: ' + destinationUri);
+    // Process the results, just get the first result, since only one file was sent in this
+    const responses = result.responses[0].responses;
+
+    let report = '';
+    for (const response of responses) {
+        report += response.fullTextAnnotation.text + '\n'
+    }
+    for (const response of responses) {
+        for (const page of response.fullTextAnnotation.pages) {
+            for (const block of page.blocks) {
+                report += `Block confidence: ${block.confidence}\n`
+                for (const paragraph of block.paragraphs) {
+                    report += ` Paragraph confidence: ${paragraph.confidence}\n`
+                    for (const word of paragraph.words) {
+                        const symbol_texts = word.symbols.map(symbol => symbol.text);
+                        const word_text = symbol_texts.join('');
+                        report += `  Word text: ${word_text} (confidence: ${word.confidence})\n`
+                        // for (const symbol of word.symbols) {
+                        //     console.log(`   Symbol: ${symbol.text} (confidence: ${symbol.confidence})`);
+                        // }
+                    }
+                }
+            }
+        }
+    }
+    fs.writeFileSync(`report/${filename.slice(0, filename.lastIndexOf('.'))}-report.txt`, report);
+    console.log('Report generated')
 }
 
 function clearTmp() {

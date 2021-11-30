@@ -4,3 +4,4 @@ server/node_modules
 server/key.json
 .idea
 /server/tmp/
+/server/report/

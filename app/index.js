@@ -6,7 +6,7 @@ document.getElementById('upload').onchange = addFile;
 
 function addFile(event) {
     Array.from(event.target.files).forEach(file => {
-        if (!file.name.endsWith('.pdf') && !file.name.endsWith('.jpg'))
+        if (!file.name.endsWith('.pdf'))
             return;
         files.push(file)
         document.getElementById('files').innerHTML += "<span>" + file.name + "</span>"
