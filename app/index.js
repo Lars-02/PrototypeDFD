@@ -1,12 +1,12 @@
 const _ = require("lodash");
-const files = [];
+let files = [];
 
 document.getElementById('submit').onclick = analyse;
 document.getElementById('upload').onchange = addFile;
 
 function addFile(event) {
     Array.from(event.target.files).forEach(file => {
-        if (!file.name.endsWith('.pdf') && !file.name.endsWith('.png') && !file.name.endsWith('.jpg'))
+        if (!file.name.endsWith('.pdf') && !file.name.endsWith('.jpg'))
             return;
         files.push(file)
         document.getElementById('files').innerHTML += "<span>" + file.name + "</span>"
@@ -23,4 +23,6 @@ async function analyse() {
             body: data
         });
     }
+    document.getElementById('files').innerHTML = "";
+    files = [];
 }
