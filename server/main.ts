@@ -43,7 +43,7 @@ app.post('/analyse', multer.single('file'), async function (req, res) {
         if (err) {
             console.log("SAVE: " + err);
             clearTmp()
-            return res.redirect(503, '/')
+            return res.status(503)
         }
         console.log("File saved");
     });
@@ -61,8 +61,6 @@ app.post('/analyse', multer.single('file'), async function (req, res) {
         return res.status(503)
     }
 
-    // Reset and redirect
-    clearTmp()
     return res.status(200)
 });
 
@@ -97,6 +95,8 @@ async function analysePdf(req, res) {
 
         blobStream.end(req.file.buffer);
     })
+
+    clearTmp()
 
     // Bucket where the file resides
     const bucketName = 'dfd-file-detection';
