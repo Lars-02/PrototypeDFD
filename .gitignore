@@ -3,4 +3,4 @@ node_modules
 key.json
 .idea
 tmp
-report
+public/report

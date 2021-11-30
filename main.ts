@@ -5,14 +5,9 @@ import * as path from "path";
 import * as express from "express";
 
 const app = express();
-
-let client;
-
-// This middleware is available in Express v4.16.0 onwards
-app.use(express.json());
+const PORT = 4200;
 
 // Multer is required to process file uploads and make them available via
-// req.files.
 const multer = Multer({
     storage: Multer.memoryStorage(),
     limits: {
@@ -20,13 +15,24 @@ const multer = Multer({
     },
 });
 
+let client;
+
+app.use(express.json());
 app.use('/', express.static(path.resolve('./dist')))
+app.use('/report', express.static(path.resolve('./public/report')))
+
+app.get('/report', function (req, res) {
+    const files = fs.readdirSync('./public/report')
+    res.status(200).send({'reports': files})
+})
 
 app.post('/analyse', multer.single('file'), async function (req, res) {
     if (!req.file) {
         res.status(400).send('No file uploaded.');
         return;
     }
+
+    console.log('\nAnalyse called')
 
     // Save file
     fs.writeFile(`${__dirname}/tmp/${req.file.originalname}`, req.file.buffer, function (err) {
@@ -93,7 +99,7 @@ async function analyse(filename) {
             }
         }
     }
-    fs.writeFileSync(`report/${filename.slice(0, filename.lastIndexOf('.'))}.txt`, report);
+    fs.writeFileSync(`public/report/${filename.slice(0, filename.lastIndexOf('.'))}.txt`, report);
     console.log('Report generated')
 }
 
@@ -109,7 +115,6 @@ function clearTmp() {
     });
 }
 
-const PORT = 4200;
 app.listen(PORT, () => {
     console.log(`App listening on port http://localhost:${PORT}`);
     console.log('Press Ctrl+C to quit.');

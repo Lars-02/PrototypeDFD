@@ -1,8 +1,24 @@
 const _ = require("lodash");
 let files = [];
 
-document.getElementById('submit').onclick = analyse;
-document.getElementById('upload').onchange = addFile;
+const submit = document.getElementById('submit')
+const upload = document.getElementById('upload')
+submit.onclick = analyse;
+upload.onchange = addFile;
+
+loadReports()
+
+function loadReports() {
+    const reports = document.getElementById('reports');
+    reports.innerHTML = '';
+    fetch('/report/', {method: "GET"}).then((response) => response.json()).then(data => {
+        for (const report of data.reports) {
+            const reportName = report.slice(0, report.lastIndexOf('.'))
+            reports.innerHTML +=
+                `<a href="/report/${reportName}.txt" download="${reportName}.txt">${reportName}</a>`
+        }
+    })
+}
 
 function addFile(event) {
     Array.from(event.target.files).forEach(file => {
@@ -12,9 +28,12 @@ function addFile(event) {
         document.getElementById('files').innerHTML += "<span>" + file.name + "</span>"
     })
     event.target.value = "";
+    submit.disabled = false;
 }
 
 async function analyse() {
+    submit.disabled = true;
+    upload.disabled = true;
     for (let file of files) {
         let data = new FormData()
         data.append('file', file)
@@ -24,5 +43,7 @@ async function analyse() {
         });
     }
     document.getElementById('files').innerHTML = "";
+    loadReports()
     files = [];
+    upload.disabled = false;
 }
