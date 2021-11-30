@@ -1,7 +1,6 @@
-app/dist
-app/node_modules
-server/node_modules
-server/key.json
+dist
+node_modules
+key.json
 .idea
-/server/tmp/
-/server/report/
+tmp
+report

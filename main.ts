@@ -20,7 +20,7 @@ const multer = Multer({
     },
 });
 
-app.use('/', express.static(path.resolve('../app/dist')))
+app.use('/', express.static(path.resolve('./dist')))
 
 app.post('/analyse', multer.single('file'), async function (req, res) {
     if (!req.file) {
@@ -29,7 +29,7 @@ app.post('/analyse', multer.single('file'), async function (req, res) {
     }
 
     // Save file
-    fs.writeFile("tmp/" + req.file.originalname, req.file.buffer, function (err) {
+    fs.writeFile(`${__dirname}/tmp/${req.file.originalname}`, req.file.buffer, function (err) {
         if (err) {
             console.log("SAVE: " + err);
             clearTmp()
@@ -40,7 +40,7 @@ app.post('/analyse', multer.single('file'), async function (req, res) {
 
     // Setup client
     client = new vision.ImageAnnotatorClient({
-        keyFilename: 'key.json'
+        keyFilename: './key.json'
     });
 
     if (req.file.originalname.endsWith('.pdf')) {
@@ -50,7 +50,7 @@ app.post('/analyse', multer.single('file'), async function (req, res) {
     }
 
     clearTmp()
-    console.log('Cleared tmp/')
+    console.log('Cleared tmp folder')
     return res.status(200).send()
 });
 
@@ -61,7 +61,7 @@ async function analyse(filename) {
         requests: [{
             inputConfig: {
                 mimeType: 'application/pdf',
-                content: await fs.promises.readFile("tmp/" + filename),
+                content: await fs.promises.readFile(`tmp/${filename}`),
             },
             features: [{type: 'DOCUMENT_TEXT_DETECTION'}],
         }],
@@ -93,16 +93,16 @@ async function analyse(filename) {
             }
         }
     }
-    fs.writeFileSync(`report/${filename.slice(0, filename.lastIndexOf('.'))}-report.txt`, report);
+    fs.writeFileSync(`report/${filename.slice(0, filename.lastIndexOf('.'))}.txt`, report);
     console.log('Report generated')
 }
 
 function clearTmp() {
-    fs.readdir("tmp", (err, files) => {
+    fs.readdir(`${__dirname}/tmp`, (err, files) => {
         if (err) throw err;
 
         for (const file of files) {
-            fs.unlink(path.join("tmp", file), err => {
+            fs.unlink(path.join(`${__dirname}/tmp`, file), err => {
                 if (err) throw err;
             });
         }
