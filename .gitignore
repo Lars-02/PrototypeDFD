@@ -3,3 +3,4 @@ app/node_modules
 server/node_modules
 server/key.json
 .idea
+/server/tmp/
