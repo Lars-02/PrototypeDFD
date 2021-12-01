@@ -19,12 +19,6 @@ let client;
 
 app.use(express.json());
 app.use('/', express.static(path.resolve('./dist')))
-app.use('/report', express.static(path.resolve('./public/report')))
-
-app.get('/report', function (req, res) {
-    const files = fs.readdirSync('./public/report')
-    res.status(200).send({'reports': files})
-})
 
 app.post('/analyse', multer.single('file'), async function (req, res) {
     if (!req.file) {
@@ -99,8 +93,6 @@ async function analyse(filename) {
             }
         }
     }
-    fs.writeFileSync(`public/report/${filename.slice(0, filename.lastIndexOf('.'))}.txt`, report);
-    console.log('Report generated')
 }
 
 function clearTmp() {

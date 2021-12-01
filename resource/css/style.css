@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+
+    h1 {
+        @apply text-xl md:text-2xl lg:text-3xl font-bold;
+    }
+
+    h2 {
+        @apply text-lg md:text-xl lg:text-2xl font-bold;
+    }
+
+    h3 {
+        @apply text-md md:text-lg lg:text-xl font-semibold;
+    }
+
+    h4 {
+        @apply text-sm md:text-md lg:text-lg font-semibold;
+    }
+
+    p, input, i, button, div, label {
+        @apply text-xs md:text-sm lg:text-md font-normal;
+    }
+
+    button {
+        @apply justify-center select-none rounded-md border-0 px-4 py-2 shadow-sm focus:outline-none transition ease-in-out duration-150 active:scale-95 bg-primary-600 text-white hover:bg-primary-500 disabled:bg-gray-400 disabled:cursor-not-allowed;
+    }
+}
+
+
+html {
+    scroll-behavior: smooth;
+}
+
+::-webkit-scrollbar {
+    width: 16px;
+    background-color: transparent;
+}
+
+::-webkit-scrollbar-track {
+    background-color: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #d6dee1;
+    border-radius: 20px;
+    border: 4px solid transparent;
+    background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: #a8bbbf;
+}
+
+::-webkit-resizer {
+    border: 3px solid;
+    border-radius: 0 0 4px 0;
+    border-color: transparent #d6dee1 #d6dee1 transparent;
+}

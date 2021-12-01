@@ -1,0 +1,5 @@
+empty
+
+Block confidence: 1
+ Paragraph confidence: 1
+  Word text: empty (confidence: 1)
