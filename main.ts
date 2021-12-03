@@ -85,14 +85,13 @@ async function analyse(filename) {
                         const symbol_texts = word.symbols.map(symbol => symbol.text);
                         const word_text = symbol_texts.join('');
                         report += `  Word text: ${word_text} (confidence: ${word.confidence})\n`
-                        // for (const symbol of word.symbols) {
-                        //     console.log(`   Symbol: ${symbol.text} (confidence: ${symbol.confidence})`);
-                        // }
                     }
                 }
             }
         }
     }
+    fs.writeFileSync(`public/report/${filename.slice(0, filename.lastIndexOf('.'))}.txt`, report);
+    console.log('Report generated')
 }
 
 function clearTmp() {
