@@ -26,6 +26,11 @@ app.get('/report', function (req, res) {
     res.status(200).send({'reports': files})
 })
 
+app.post('/report/delete', function (req, res) {
+    clearDir('resource/report')
+    res.status(200).send()
+})
+
 app.post('/analyse', multer.single('file'), async function (req, res) {
     if (!req.file) {
         res.status(400).send('No file uploaded.');
@@ -38,7 +43,7 @@ app.post('/analyse', multer.single('file'), async function (req, res) {
     fs.writeFile(`${__dirname}/tmp/${req.file.originalname}`, req.file.buffer, function (err) {
         if (err) {
             console.log("SAVE: " + err);
-            clearTmp()
+            clearDir('tmp')
             return res.status(503)
         }
         console.log("File saved");
@@ -55,7 +60,7 @@ app.post('/analyse', multer.single('file'), async function (req, res) {
         return res.status(503).send()
     }
 
-    clearTmp()
+    clearDir('tmp')
     console.log('Cleared tmp folder')
     return res.status(200).send()
 });
@@ -78,7 +83,7 @@ async function analyse(filename) {
     const responses = result.responses[0].responses;
 
     let report = '';
-    let searches = [{
+    let searches: {key: string, value: string|null, confidence: number}[] = [{
         key: 'ordernummer',
         value: null,
         confidence: 0,
@@ -101,15 +106,17 @@ async function analyse(filename) {
                 report += `Block confidence: ${block.confidence}\n`
                 for (const paragraph of block.paragraphs) {
                     report += ` Paragraph confidence: ${paragraph.confidence}\n`
-                    for (const [index, word] of paragraph.words.entries()) {
+                    for (const word of paragraph.words) {
                         const word_text = word.symbols.map(symbol => symbol.text).join('');
                         report += `  Word text: ${word_text} (confidence: ${word.confidence})\n`
                         for (const search of searches) {
-                            if (search.value === null && word_text.toLowerCase() === search.key.toLowerCase()) {
-                                if (paragraph.words[index + 1] !== undefined) {
-                                    search.value = paragraph.words[index + 1].symbols.map(symbol => symbol.text).join('');
-                                    search.confidence = paragraph.confidence
+                            if (paragraph.words.length > 1 && search.value === null && word_text.toLowerCase() === search.key.toLowerCase()) {
+                                let value = '';
+                                for (let index = 1; index < paragraph.words.length; index += 1) {
+                                    value += paragraph.words[index].symbols.map(symbol => symbol.text).join('') + ' ';
                                 }
+                                search.value = value.trim()
+                                search.confidence = paragraph.confidence
                             }
                         }
                     }
@@ -122,16 +129,15 @@ async function analyse(filename) {
         report += `${search.key}: ${search.value} - ${search.confidence}\n`
     }
     fs.writeFileSync(`resource/report/${filename.slice(0, filename.lastIndexOf('.'))}.txt`, report);
-    console.log(searches)
     console.log('Report generated')
 }
 
-function clearTmp() {
-    fs.readdir(`${__dirname}/tmp`, (err, files) => {
+function clearDir(dirname: string) {
+    fs.readdir(`${__dirname}/${dirname}`, (err, files) => {
         if (err) throw err;
 
         for (const file of files) {
-            fs.unlink(path.join(`${__dirname}/tmp`, file), err => {
+            fs.unlink(path.join(`${__dirname}/${dirname}`, file), err => {
                 if (err) throw err;
             });
         }
