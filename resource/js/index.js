@@ -5,6 +5,20 @@ const upload = document.getElementById('upload')
 submit.onclick = analyse;
 upload.onchange = addFile;
 
+loadReports()
+
+function loadReports() {
+    const reports = document.getElementById('reports');
+    reports.innerHTML = '';
+    fetch('/report/', {method: "GET"}).then((response) => response.json()).then(data => {
+        for (const report of data.reports) {
+            const reportName = report.slice(0, report.lastIndexOf('.'))
+            reports.innerHTML +=
+                `<a href="/report/${reportName}.txt" download="${reportName}.txt"><li>${reportName}</li></a>`
+        }
+    })
+}
+
 function addFile(event) {
     Array.from(event.target.files).forEach(file => {
         if (!file.name.endsWith('.pdf'))
@@ -28,6 +42,7 @@ async function analyse() {
         });
     }
     document.getElementById('files').innerHTML = "";
+    loadReports()
     files = [];
     upload.disabled = false;
 }

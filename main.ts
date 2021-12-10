@@ -15,10 +15,16 @@ const multer = Multer({
     },
 });
 
-let client;
+let google;
 
 app.use(express.json());
 app.use('/', express.static(path.resolve('./dist')))
+app.use('/report', express.static(path.resolve('./resource/report')))
+
+app.get('/report', function (req, res) {
+    const files = fs.readdirSync('./resource/report')
+    res.status(200).send({'reports': files})
+})
 
 app.post('/analyse', multer.single('file'), async function (req, res) {
     if (!req.file) {
@@ -39,7 +45,7 @@ app.post('/analyse', multer.single('file'), async function (req, res) {
     });
 
     // Setup client
-    client = new vision.ImageAnnotatorClient({
+    google = new vision.ImageAnnotatorClient({
         keyFilename: './key.json'
     });
 
@@ -57,7 +63,7 @@ app.post('/analyse', multer.single('file'), async function (req, res) {
 async function analyse(filename) {
 
     // Make the synchronous batch request.
-    const [result] = await client.batchAnnotateFiles({
+    const [result] = await google.batchAnnotateFiles({
         requests: [{
             inputConfig: {
                 mimeType: 'application/pdf',
@@ -72,6 +78,20 @@ async function analyse(filename) {
     const responses = result.responses[0].responses;
 
     let report = '';
+    let searches = [{
+        key: 'ordernummer',
+        value: null,
+        confidence: 0,
+    }, {
+        key: 'client',
+        value: null,
+        confidence: 0,
+    }, {
+        key: 'committee',
+        value: null,
+        confidence: 0,
+    }];
+
     for (const response of responses) {
         report += response.fullTextAnnotation.text + '\n'
     }
@@ -81,16 +101,28 @@ async function analyse(filename) {
                 report += `Block confidence: ${block.confidence}\n`
                 for (const paragraph of block.paragraphs) {
                     report += ` Paragraph confidence: ${paragraph.confidence}\n`
-                    for (const word of paragraph.words) {
-                        const symbol_texts = word.symbols.map(symbol => symbol.text);
-                        const word_text = symbol_texts.join('');
+                    for (const [index, word] of paragraph.words.entries()) {
+                        const word_text = word.symbols.map(symbol => symbol.text).join('');
                         report += `  Word text: ${word_text} (confidence: ${word.confidence})\n`
+                        for (const search of searches) {
+                            if (search.value === null && word_text.toLowerCase() === search.key.toLowerCase()) {
+                                if (paragraph.words[index + 1] !== undefined) {
+                                    search.value = paragraph.words[index + 1].symbols.map(symbol => symbol.text).join('');
+                                    search.confidence = paragraph.confidence
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
     }
-    fs.writeFileSync(`public/report/${filename.slice(0, filename.lastIndexOf('.'))}.txt`, report);
+    report += '\n'
+    for (const search of searches) {
+        report += `${search.key}: ${search.value} - ${search.confidence}\n`
+    }
+    fs.writeFileSync(`resource/report/${filename.slice(0, filename.lastIndexOf('.'))}.txt`, report);
+    console.log(searches)
     console.log('Report generated')
 }
 
