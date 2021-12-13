@@ -4,8 +4,8 @@
   "description": "",
   "main": "main.ts",
   "type": "commonjs",
-  "start": "ts-node main.ts",
   "scripts": {
+    "start": "ts-node main.ts",
     "watch": "nodemon --exec \"npm run build && npm run serve\" ",
     "build": "npm run tailwind && npx webpack build --config webpack.config.js",
     "tailwind": "tailwindcss build -i resource/css/style.css -o dist/css/style.css",
