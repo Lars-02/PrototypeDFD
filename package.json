@@ -4,6 +4,7 @@
   "description": "",
   "main": "main.ts",
   "type": "commonjs",
+  "start": "ts-node main.ts",
   "scripts": {
     "watch": "nodemon --exec \"npm run build && npm run serve\" ",
     "build": "npm run tailwind && npx webpack build --config webpack.config.js",
@@ -24,7 +25,8 @@
     "multer": "^1.4.3",
     "path": "^0.12.7",
     "stream": "0.0.2",
-    "url": "^0.11.0"
+    "url": "^0.11.0",
+    "nodets": "^0.0.1"
   },
   "devDependencies": {
     "@babel/core": "^7.16.0",
